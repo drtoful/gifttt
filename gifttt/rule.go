@@ -110,6 +110,7 @@ func (s *GlobalScope) Eval(node ast.Node) (interface{}, error) {
 	scope := twik.NewDefaultScope(s.fset)
 	scope.Enclose(s)
 	scope.Create("run", runFn)
+	scope.Create("log", logFn)
 	return scope.Eval(node)
 }
 
@@ -144,6 +145,17 @@ func runFn(args []interface{}) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+// "log" a message
+func logFn(args []interface{}) (interface{}, error) {
+	if len(args) == 1 {
+		if s, ok := args[0].(string); ok {
+			log.Println(s)
+			return nil, nil
+		}
+	}
+	return nil, errors.New("log function takes a single string argument")
 }
 
 func NewGlobalScope(fset *ast.FileSet) twik.Scope {
