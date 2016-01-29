@@ -47,8 +47,13 @@ func (vm *VariableManager) Get(name string) (interface{}, error) {
 }
 
 func (vm *VariableManager) Set(name string, value interface{}) error {
-	v := &Value{Value: value}
+	// check if the value has changed since the last time we set it
+	old, err := vm.Get(name)
+	if err == nil && old == value {
+		return nil
+	}
 
+	v := &Value{Value: value}
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
