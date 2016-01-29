@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
+	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/drtoful/twik"
 	"github.com/drtoful/twik/ast"
@@ -18,17 +21,20 @@ var (
 )
 
 type VariableManager struct {
-	cache map[string]*Value
+	Updates chan *Value
+	cache   map[string]*Value
 }
 
 type Value struct {
+	Name  string      `json:"-"`
 	Value interface{} `json:"value"`
 }
 
 func GetManager() *VariableManager {
 	if _manager == nil {
 		_manager = &VariableManager{
-			cache: make(map[string]*Value),
+			Updates: make(chan *Value),
+			cache:   make(map[string]*Value),
 		}
 	}
 	return _manager
@@ -63,7 +69,7 @@ func (vm *VariableManager) Set(name string, value interface{}) error {
 		return nil
 	}
 
-	v := &Value{Value: value}
+	v := &Value{Value: value, Name: name}
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -71,6 +77,7 @@ func (vm *VariableManager) Set(name string, value interface{}) error {
 
 	store := GetStore()
 	vm.cache[name] = v
+	vm.Updates <- v
 	return store.Set(varPrefix+name, string(b))
 }
 
@@ -175,4 +182,58 @@ func NewRule(name string, r io.Reader) (*Rule, error) {
 func (r *Rule) Run() error {
 	_, err := r.scope.Eval(r.program)
 	return err
+}
+
+type RuleManager struct {
+	rules []*Rule
+}
+
+func NewRuleManager(path string) *RuleManager {
+	manager := &RuleManager{
+		rules: []*Rule{},
+	}
+
+	files, _ := ioutil.ReadDir(path)
+	count := 0
+	for _, f := range files {
+		if !f.IsDir() && strings.HasSuffix(f.Name(), ".rule") {
+			file, err := os.Open(f.Name())
+			if err != nil {
+				log.Printf("error opening '%s': %s\n", f.Name(), err.Error())
+				continue
+			}
+			defer file.Close()
+
+			rule, err := NewRule(f.Name(), file)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			manager.rules = append(manager.rules, rule)
+			count += 1
+		}
+	}
+	log.Printf("loaded %d rules\n", count)
+
+	return manager
+}
+
+func (m *RuleManager) Run() {
+	vm := GetManager()
+
+	for {
+		<-vm.Updates
+
+		// TODO: only run rules, that are affected by a change
+		//       to this variable
+		go func() {
+			for _, r := range m.rules {
+				err := r.Run()
+				if err != nil {
+					log.Printf("error in '%s': %s\n", r.Name, err.Error())
+				}
+			}
+		}()
+	}
 }
