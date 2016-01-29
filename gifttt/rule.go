@@ -16,6 +16,7 @@ var (
 )
 
 type VariableManager struct {
+	cache map[string]*Value
 }
 
 type Value struct {
@@ -24,12 +25,19 @@ type Value struct {
 
 func GetManager() *VariableManager {
 	if _manager == nil {
-		_manager = &VariableManager{}
+		_manager = &VariableManager{
+			cache: make(map[string]*Value),
+		}
 	}
 	return _manager
 }
 
 func (vm *VariableManager) Get(name string) (interface{}, error) {
+	// check cache first
+	if v, ok := vm.cache[name]; ok {
+		return v.Value, nil
+	}
+
 	store := GetStore()
 	b, err := store.Get(varPrefix + name)
 	if err != nil {
@@ -60,6 +68,7 @@ func (vm *VariableManager) Set(name string, value interface{}) error {
 	}
 
 	store := GetStore()
+	vm.cache[name] = v
 	return store.Set(varPrefix+name, string(b))
 }
 
