@@ -85,7 +85,7 @@ func (vm *VariableManager) Set(name string, value interface{}) error {
 // interpreter. Get/Set will be delegated to it, so we can answer
 // with the data in the VariableManager
 type GlobalScope struct {
-	delegate twik.Scope
+	fset *ast.FileSet
 }
 
 func (s *GlobalScope) Create(symbol string, value interface{}) error {
@@ -107,7 +107,10 @@ func (s *GlobalScope) Branch() twik.Scope {
 }
 
 func (s *GlobalScope) Eval(node ast.Node) (interface{}, error) {
-	return s.delegate.Eval(node)
+	scope := twik.NewDefaultScope(s.fset)
+	scope.Enclose(s)
+	scope.Create("run", runFn)
+	return scope.Eval(node)
 }
 
 func (s *GlobalScope) Enclose(parent twik.Scope) error {
@@ -145,10 +148,8 @@ func runFn(args []interface{}) (interface{}, error) {
 
 func NewGlobalScope(fset *ast.FileSet) twik.Scope {
 	scope := &GlobalScope{
-		delegate: twik.NewDefaultScope(fset),
+		fset: fset,
 	}
-	scope.delegate.Enclose(scope)
-	scope.delegate.Create("run", runFn)
 	return scope
 }
 
