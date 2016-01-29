@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/drtoful/twik"
 	"github.com/drtoful/twik/ast"
@@ -234,6 +235,20 @@ func NewRuleManager(path string) *RuleManager {
 
 func (m *RuleManager) Run() {
 	vm := GetManager()
+
+	// the rule manager keeps track of time
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		for range ticker.C {
+			now := time.Now()
+			vm.Set("time:second", int64(now.Second()))
+			vm.Set("time:minute", int64(now.Minute()))
+			vm.Set("time:hour", int64(now.Hour()))
+			vm.Set("date:day", int64(now.Day()))
+			vm.Set("date:month", int64(now.Month()))
+			vm.Set("date:year", int64(now.Year()))
+		}
+	}()
 
 	for {
 		<-vm.Updates
