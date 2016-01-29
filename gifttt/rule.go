@@ -2,9 +2,11 @@ package gifttt
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os/exec"
 
 	"github.com/drtoful/twik"
 	"github.com/drtoful/twik/ast"
@@ -105,11 +107,41 @@ func (s *GlobalScope) Enclose(parent twik.Scope) error {
 	panic("never reached")
 }
 
+// "run" let's the user execute arbitrary commands
+func runFn(args []interface{}) (interface{}, error) {
+	if len(args) < 1 {
+		return nil, errors.New("run takes at least one argument")
+	}
+
+	commands := []string{}
+	for _, arg := range args {
+		if s, ok := arg.(string); ok {
+			commands = append(commands, s)
+		} else {
+			return nil, errors.New("run only takes string arguments")
+		}
+	}
+
+	var cmd *exec.Cmd
+	if len(commands) == 1 {
+		cmd = exec.Command(commands[0])
+	} else {
+		cmd = exec.Command(commands[0], commands[1:]...)
+	}
+
+	if err := cmd.Run(); err == nil {
+		cmd.Wait()
+	}
+
+	return nil, nil
+}
+
 func NewGlobalScope(fset *ast.FileSet) twik.Scope {
 	scope := &GlobalScope{
 		delegate: twik.NewDefaultScope(fset),
 	}
 	scope.delegate.Enclose(scope)
+	scope.delegate.Create("run", runFn)
 	return scope
 }
 
