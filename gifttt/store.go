@@ -15,6 +15,7 @@ var (
 	_store  *Store = nil
 
 	ErrUnknownBucket = errors.New("bucket '" + string(_BUCKET) + "' does not exist")
+	ErrNotFound      = errors.New("key not found")
 )
 
 type Store struct {
@@ -87,7 +88,11 @@ func (store *Store) Get(key string) (value string, err error) {
 		if b == nil {
 			return ErrUnknownBucket
 		}
-		value = string(b.Get([]byte(key)))
+		data := b.Get([]byte(key))
+		if data == nil {
+			return ErrNotFound
+		}
+		value = string(data)
 
 		return nil
 	})
