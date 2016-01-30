@@ -216,9 +216,9 @@ func NewRuleManager(path string) *RuleManager {
 				log.Printf("error opening '%s': %s\n", f.Name(), err.Error())
 				continue
 			}
-			defer file.Close()
 
 			rule, err := NewRule(f.Name(), file)
+			file.Close()
 			if err != nil {
 				log.Println(err)
 				continue
