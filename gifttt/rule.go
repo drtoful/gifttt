@@ -166,6 +166,66 @@ func NewGlobalScope(fset *ast.FileSet) twik.Scope {
 	return scope
 }
 
+// this scope is trying to find out, which symbols (in gifttt variables)
+// there are, that might trigger on value change.
+type varScope struct {
+	variables chan string
+}
+
+func (s *varScope) Create(name string, value interface{}) error {
+	panic("not reached")
+}
+
+func (s *varScope) Set(name string, value interface{}) error {
+	panic("not reached")
+}
+
+func (s *varScope) Get(name string) (interface{}, error) {
+	panic("not reached")
+}
+
+func (s *varScope) Branch() twik.Scope {
+	panic("not reached")
+}
+
+func (s *varScope) Enclose(scope twik.Scope) error {
+	panic("not reached")
+}
+
+func (s *varScope) Eval(node ast.Node) (interface{}, error) {
+	switch node := node.(type) {
+	case *ast.Symbol:
+		if node.Name == "log" || node.Name == "run" {
+			return nil, nil
+		}
+		for _, glb := range twik.Globals {
+			if node.Name == glb.Name {
+				return nil, nil
+			}
+		}
+		s.variables <- node.Name
+		return nil, nil
+	case *ast.Int:
+		return nil, nil
+	case *ast.Float:
+		return nil, nil
+	case *ast.String:
+		return nil, nil
+	case *ast.List:
+		for _, node := range node.Nodes {
+			s.Eval(node)
+		}
+		return nil, nil
+	case *ast.Root:
+		for _, node := range node.Nodes {
+			s.Eval(node)
+		}
+		close(s.variables)
+		return nil, nil
+	}
+	return nil, nil
+}
+
 type Rule struct {
 	Name    string
 	program ast.Node
@@ -199,12 +259,12 @@ func (r *Rule) Run() error {
 }
 
 type RuleManager struct {
-	rules []*Rule
+	rules map[string][]*Rule
 }
 
 func NewRuleManager(path string) *RuleManager {
 	manager := &RuleManager{
-		rules: []*Rule{},
+		rules: make(map[string][]*Rule),
 	}
 
 	files, _ := ioutil.ReadDir(path)
@@ -224,7 +284,29 @@ func NewRuleManager(path string) *RuleManager {
 				continue
 			}
 
-			manager.rules = append(manager.rules, rule)
+			// try to infer which variables are used by this rule, so that we can
+			// find out which rules need really to be triggered when a variable
+			// changes
+			scope := &varScope{variables: make(chan string)}
+			go scope.Eval(rule.program)
+			for name := range scope.variables {
+				if _, ok := manager.rules[name]; !ok {
+					manager.rules[name] = []*Rule{}
+				}
+
+				rules := manager.rules[name]
+				var found bool
+				for _, r := range rules {
+					found = found || (r.Name == f.Name())
+					if found {
+						break
+					}
+				}
+
+				if !found {
+					manager.rules[name] = append(rules, rule)
+				}
+			}
 			count += 1
 		}
 	}
@@ -251,17 +333,23 @@ func (m *RuleManager) Run() {
 	}()
 
 	for {
-		<-vm.Updates
+		v := <-vm.Updates
 
-		// TODO: only run rules, that are affected by a change
-		//       to this variable
 		go func() {
-			for _, r := range m.rules {
+			if _, ok := m.rules[v.Name]; !ok {
+				return
+			}
+
+			count := 0
+			for _, r := range m.rules[v.Name] {
 				err := r.Run()
 				if err != nil {
 					log.Printf("error in '%s': %s\n", r.Name, err.Error())
 				}
+				count += 1
 			}
+
+			log.Printf("executed %d rules for change in variable '%s' -> '%#v'\n", count, v.Name, v.Value)
 		}()
 	}
 }
