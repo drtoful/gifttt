@@ -3,7 +3,7 @@ package gifttt
 import (
 	"errors"
 
-	"github.com/boltdb/bolt"
+	"github.com/drtoful/gifttt/Godeps/_workspace/src/github.com/boltdb/bolt"
 )
 
 const (

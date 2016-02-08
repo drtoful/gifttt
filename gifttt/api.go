@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/codegangsta/negroni"
-	"github.com/gorilla/mux"
+	"github.com/drtoful/gifttt/Godeps/_workspace/src/github.com/codegangsta/negroni"
+	"github.com/drtoful/gifttt/Godeps/_workspace/src/github.com/gorilla/mux"
 )
 
 type APIServer struct {

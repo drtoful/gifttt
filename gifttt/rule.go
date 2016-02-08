@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drtoful/twik"
-	"github.com/drtoful/twik/ast"
+	"github.com/drtoful/gifttt/Godeps/_workspace/src/github.com/drtoful/twik"
+	"github.com/drtoful/gifttt/Godeps/_workspace/src/github.com/drtoful/twik/ast"
 )
 
 var (
