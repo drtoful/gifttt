@@ -36,12 +36,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// start rule manager
+	// start the servers
 	rm := gifttt.NewRuleManager(*rulePath)
-	go rm.Run()
-
-	// start the api server
 	api := gifttt.NewAPIServer(*apiBind, *apiPort)
+
+	go rm.Run()
 	go api.Run()
 
 	// all listeners are started in the background as
