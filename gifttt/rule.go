@@ -3,7 +3,6 @@ package gifttt
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -51,7 +50,7 @@ func (vm *VariableManager) Get(name string) (interface{}, error) {
 	store := GetStore()
 	b, err := store.Get(varPrefix + name)
 	if err != nil {
-		return nil, fmt.Errorf("undefined symbol: %s", name)
+		return nil, nil
 	}
 
 	v := &Value{}
