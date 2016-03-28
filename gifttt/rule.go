@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -271,13 +272,15 @@ func NewRuleManager(path string) *RuleManager {
 	count := 0
 	for _, f := range files {
 		if !f.IsDir() && strings.HasSuffix(f.Name(), ".rule") {
-			file, err := os.Open(f.Name())
+			filename := filepath.Join(path, f.Name())
+
+			file, err := os.Open(filename)
 			if err != nil {
 				log.Printf("error opening '%s': %s\n", f.Name(), err.Error())
 				continue
 			}
 
-			rule, err := NewRule(f.Name(), file)
+			rule, err := NewRule(filename, file)
 			file.Close()
 			if err != nil {
 				log.Println(err)
