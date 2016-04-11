@@ -6,10 +6,12 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/drtoful/gifttt/Godeps/_workspace/src/github.com/drtoful/twik"
@@ -230,6 +232,7 @@ type Rule struct {
 	Name    string
 	program ast.Node
 	scope   twik.Scope
+	lock    *sync.Mutex
 }
 
 func NewRule(name string, r io.Reader) (*Rule, error) {
@@ -250,10 +253,13 @@ func NewRule(name string, r io.Reader) (*Rule, error) {
 		Name:    name,
 		program: node,
 		scope:   scope,
+		lock:    &sync.Mutex{},
 	}, nil
 }
 
 func (r *Rule) Run() error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	_, err := r.scope.Eval(r.program)
 	return err
 }
@@ -317,6 +323,16 @@ func NewRuleManager(path string) *RuleManager {
 	return manager
 }
 
+func getSession() string {
+	rand.Seed(time.Now().UTC().UnixNano())
+	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+	result := make([]byte, 16)
+	for i := 0; i < len(result); i += 1 {
+		result[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(result)
+}
+
 func (m *RuleManager) Run() {
 	vm := GetManager()
 
@@ -339,20 +355,25 @@ func (m *RuleManager) Run() {
 		v := <-vm.Updates
 
 		go func() {
+			session := getSession()
 			if _, ok := m.rules[v.Name]; !ok {
 				return
 			}
 
 			count := 0
 			for _, r := range m.rules[v.Name] {
-				err := r.Run()
-				if err != nil {
-					log.Printf("error in '%s': %s\n", r.Name, err.Error())
-				}
+				go func() {
+					err := r.Run()
+					if err != nil {
+						log.Printf("[%s] error in '%s': %s\n", session, r.Name, err.Error())
+					} else {
+						log.Printf("[%s] executed rule '%s'\n", session, r.Name)
+					}
+				}()
 				count += 1
 			}
 
-			log.Printf("executed %d rules for change in variable '%s' -> '%#v'\n", count, v.Name, v.Value)
+			log.Printf("[%s] executed %d rules for change in variable '%s' -> '%#v'\n", session, count, v.Name, v.Value)
 		}()
 	}
 }
