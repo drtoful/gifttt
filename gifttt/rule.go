@@ -279,7 +279,7 @@ func NewRuleManager(path string) *RuleManager {
 				continue
 			}
 
-			rule, err := NewRule(filename, file)
+			rule, err := NewRule(f.Name(), file)
 			file.Close()
 			if err != nil {
 				log.Println(err)
