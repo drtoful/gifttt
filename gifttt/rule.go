@@ -331,6 +331,7 @@ func (m *RuleManager) Run() {
 			vm.Set("date:day", int64(now.Day()))
 			vm.Set("date:month", int64(now.Month()))
 			vm.Set("date:year", int64(now.Year()))
+			vm.Set("date:wday", int64(now.Weekday()))
 		}
 	}()
 
