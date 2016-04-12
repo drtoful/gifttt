@@ -17,7 +17,7 @@
 		},
 		{
 			"ImportPath": "github.com/drtoful/twik",
-			"Rev": "e3659854e5feff69cb6f7f87d5ad3842d5a7e43a"
+			"Rev": "b83d582db61e81af460762b69bcb8aa18b1a2634"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",

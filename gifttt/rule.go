@@ -142,6 +142,7 @@ func runFn(args []interface{}) (interface{}, error) {
 	} else {
 		cmd = exec.Command(commands[0], commands[1:]...)
 	}
+	log.Printf("executing command '%s' with arguments: %s\n", commands[0], strings.Join(commands[1:], ","))
 
 	if err := cmd.Run(); err == nil {
 		cmd.Wait()

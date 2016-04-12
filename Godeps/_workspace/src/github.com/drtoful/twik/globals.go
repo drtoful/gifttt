@@ -3,6 +3,7 @@ package twik
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/drtoful/gifttt/Godeps/_workspace/src/github.com/drtoful/twik/ast"
 )
@@ -36,6 +37,9 @@ var Globals = []struct {
 	{"func", funcFn},
 	{"for", forFn},
 	{"range", rangeFn},
+	{"split", splitFn},
+	{"nth", nthFn},
+	{"length", lengthFn},
 }
 
 func errorFn(args []interface{}) (value interface{}, err error) {
@@ -108,6 +112,46 @@ func ltFn(args []interface{}) (value interface{}, err error) {
 
 func lteFn(args []interface{}) (value interface{}, err error) {
 	return cmpFn("<=", args)
+}
+
+func splitFn(args []interface{}) (interface{}, error) {
+	if len(args) >= 2 {
+		text, ok1 := args[0].(string)
+		sep, ok2 := args[1].(string)
+		if ok1 && ok2 {
+			slice := strings.Split(text, sep)
+			result := make([]interface{}, len(slice))
+			for i := range slice {
+				result[i] = slice[i]
+			}
+			return result, nil
+		}
+	}
+	return nil, errors.New("split function takes two string arguments")
+}
+
+func nthFn(args []interface{}) (interface{}, error) {
+	if len(args) == 2 {
+		list, ok1 := args[0].([]interface{})
+		n, ok2 := args[1].(int64)
+
+		if ok1 && ok2 {
+			if int(n) >= len(list) {
+				return nil, errors.New("index out of bounds")
+			}
+			return list[n], nil
+		}
+	}
+	return nil, errors.New("nth function takes a list and integer argument")
+}
+
+func lengthFn(args []interface{}) (interface{}, error) {
+	if len(args) == 1 {
+		if list, ok := args[0].([]interface{}); ok {
+			return int64(len(list)), nil
+		}
+	}
+	return nil, errors.New("length function takes a list as argument")
 }
 
 func plusFn(args []interface{}) (value interface{}, err error) {

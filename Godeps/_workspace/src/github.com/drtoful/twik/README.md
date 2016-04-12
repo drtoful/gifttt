@@ -12,3 +12,11 @@ These are the changes to the original code:
 - added comparision functions ''>'', ''>='', ''<'' and ''<='' that can only be applied to numbers (int and float) and always contain 2 epxressions. will return true or false.
 - Scope is now an interface and the previous was renamed to DefaultScope
 - Scope's can now be "stacked" via the Enclosure method
+- added ''split'' functions for strings
+- added ''nth'' and ''length'' functions for easy usage of list from ''split''
+
+
+ToDo
+----
+
+- Update test cases with new functions

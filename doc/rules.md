@@ -91,3 +91,21 @@ Create a new symbol with name and value given. Note, that this will behave like 
     (set <name> <value>)
 
 Set the value of a named symbol. If the symbol is global this will trigger re-evaluation of all rules, that contain this symbol. Always evaluates to **nil**.
+
+### split
+
+    (split <text> <sep>)
+
+Splits the string *text* using the seperator *sep*. The seperator can be the empty string, which will result in splitting the given text into its characters. Always returns a list of strings.
+
+### nth
+
+    (nth <list> <n>)
+
+Returns the *n*th element of given list *list*. Will produce an error if n is not within bounds of list.
+
+### length
+
+    (length <list>)
+
+Returns the number of elements in *list* as integer.
